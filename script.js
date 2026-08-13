@@ -1,24 +1,45 @@
-    // JAVASCRIPT//
-    
     // Get elements
     const menuIcon = document.getElementById('menuIcon');
     const navbar = document.getElementById('navbar');
-    
+
     // Check if elements exist (prevents errors)
     if (menuIcon && navbar) {
-        // Toggle menu when hamburger clicked
-        menuIcon.addEventListener('click', () => {
-            navbar.classList.toggle('active');
+        // Toggle menu when hamburger clicked.
+          menuIcon.addEventListener('click', () => {
+            const isOpen = navbar.classList.toggle('active');
+            menuIcon.textContent = isOpen ? '✕' : '☰';
+            menuIcon.setAttribute('aria-expanded', String(isOpen));
         });
-        
+
         // Get all nav links
         const navLinks = document.querySelectorAll('.navbar a');
-        
+
         // Close menu when any link is clicked
         navLinks.forEach((link) => {
             link.addEventListener('click', () => {
                 navbar.classList.remove('active');
+                menuIcon.textContent = '☰';
+                menuIcon.setAttribute('aria-expanded', 'false');
             });
+        });
+
+        document.addEventListener('click', (e) => {
+            const clickedInsideNav = navbar.contains(e.target) || menuIcon.contains(e.target);
+            if (!clickedInsideNav && navbar.classList.contains('active')) {
+                navbar.classList.remove('active');
+                menuIcon.textContent = '☰';
+                menuIcon.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // New: close the mobile menu with the Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && navbar.classList.contains('active')) {
+                navbar.classList.remove('active');
+                menuIcon.textContent = '☰';
+                menuIcon.setAttribute('aria-expanded', 'false');
+                menuIcon.focus();
+            }
         });
     }
 
@@ -75,9 +96,21 @@
         statusMessage.parentNode.insertBefore(copyDiv, statusMessage.nextSibling);
         document.getElementById('copyBtn').addEventListener('click', function () {
           const copyText = document.getElementById('copyText');
-          copyText.select();
-          document.execCommand('copy');
-          alert('Copied! Send from your phone.');
+          const rawMessage = copyText.value;
+          
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(rawMessage)
+              .then(() => alert('Copied! Send from your phone.'))
+              .catch(() => {
+                copyText.select();
+                document.execCommand('copy');
+                alert('Copied! Send from your phone.');
+              });
+          } else {
+            copyText.select();
+            document.execCommand('copy');
+            alert('Copied! Send from your phone.');
+          }
         });
             }
     });
@@ -108,17 +141,35 @@
       });
     }
 
-    // active nav highlight on click 
     const navLinks = document.querySelectorAll('.navbar a');
-    navLinks.forEach(link => {
-      link.addEventListener('click', function (e) {
-        if (this.getAttribute('href') === '#') {
-          e.preventDefault();
+    const sections = document.querySelectorAll('section[id]');
+
+    if (sections.length && navLinks.length && 'IntersectionObserver' in window) {
+      const setActiveLink = (id) => {
+        navLinks.forEach((link) => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+      };
+
+      const sectionObserver = new IntersectionObserver(
+        (entries) => {
+       
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible) {
+            setActiveLink(visible.target.id);
+          }
+        },
+        {
+         
+          rootMargin: '-100px 0px -60% 0px',
+          threshold: [0.1, 0.25, 0.5, 0.75, 1]
         }
-        navLinks.forEach(l => l.classList.remove('active'));
-        this.classList.add('active');
-      });
-    });
+      );
+
+      sections.forEach((section) => sectionObserver.observe(section));
+    }
   
   
     // TYPEWRITER EFFECT - Words to cycle through
@@ -138,13 +189,13 @@
       if (!isDeleting && charIndex <= currentWord.length) {
         dynamicTextElement.textContent = currentWord.substring(0, charIndex);
         charIndex++;
-        typingSpeed = 150;
+        typingSpeed = 50;
       }
       // BACKSPACING: removing characters
       else if (isDeleting && charIndex >= 0) {
         dynamicTextElement.textContent = currentWord.substring(0, charIndex);
         charIndex--;
-        typingSpeed = 100;
+        typingSpeed = 50;
       }
 
       // Word fully typed -> pause then delete
@@ -164,3 +215,7 @@
 
     // Start the animation when page loads
     typeEffect();
+    const yearEl = document.getElementById('year');
+    if (yearEl) {
+      yearEl.textContent = new Date().getFullYear();
+    }
